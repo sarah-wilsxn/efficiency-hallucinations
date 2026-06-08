@@ -1,0 +1,182 @@
+[
+  {
+    "id": 1,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "control",
+    "response": "Here's a faster, standard backtracking solution for Combination Sum II. It sorts candidates so we can prune branches early, avoids creating new lists on every recursive call (uses append/pop in-place), and skips duplicates at the same recursion depth so each combination is produced only once.\n\nCode:\n\nclass Solution:\n    def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:\n        candidates.sort()\n        res = []\n        n = len(candidates)\n\n        def backtrack(start: int, remaining: int, path: list):\n            if remaining == 0:\n                res.append(path.copy())\n                return\n            for i in range(start, n):\n                val = candidates[i]\n                if val > remaining:\n                    break                       # prune: sorted -> no need to proceed further\n                if i > start and val == candidates[i - 1]:\n                    continue                    # skip duplicates at same recursion depth\n                path.append(val)\n                backtrack(i + 1, remaining - val, path)  # pick next starting from i+1 (each candidate used once)\n                path.pop()\n\n        backtrack(0, target, [])\n        return res\n\nWhy this is faster\n- Sorting + early break (val > remaining) prunes many branches.\n- Skipping duplicates prevents generating duplicate combinations.\n- Using a single mutable path (append/pop) avoids costly list copies each recursion.\n- Passing remaining (target - sum) avoids repeatedly summing the path.",
+    "response_preview": "Here's a faster, standard backtracking solution for Combination Sum II. It sorts candidates so we can prune branches ...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 1,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "class Solution:\n    def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:\n        candidates.sort()\n        ans = []\n        path = []\n        n = len(candidates)\n\n        def dfs(start, remain):\n            if remain == 0:\n                ans.append(path.copy())\n                return\n            for i in range(start, n):\n                if candidates[i] > remain:\n                    break  # prune: further numbers are too large\n                if i > start and candidates[i] == candidates[i - 1]:\n                    continue  # skip duplicates at the same recursion level\n                path.append(candidates[i])\n                dfs(i + 1, remain - candidates[i])\n                path.pop()\n\n        dfs(0, target)\n        return ans",
+    "response_preview": "class Solution: def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]: candidates.sort() a...",
+    "behavioral_classification": "Action on improvable code"
+  },
+  {
+    "id": 2,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "control",
+    "response": "You can get O(n) time and O(1) extra space with a two-pointer write technique. Keep a write index and copy each element only if it's allowed (either we have written fewer than 2 elements yet, or the current element differs from the element two positions back).\n\nFast implementation:\n\n```python\nfrom typing import List\n\nclass Solution:\n    def removeDuplicates(self, nums: List[int]) -> int:\n        write = 0\n        for num in nums:\n            if write < 2 or num != nums[write - 2]:\n                nums[write] = num\n                write += 1\n        return write\n```\n\nWhy this is fast:\n- Single pass through the array: O(n) time.\n- No costly list.count or pop operations (which would be O(n) each).\n- In-place writes only, O(1) extra space.",
+    "response_preview": "You can get O(n) time and O(1) extra space with a two-pointer write technique. Keep a write index and copy each eleme...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 2,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "Replace the O(n^2) counting + pop loop with an in-place two-pointer O(n) solution. This keeps at most two copies of each number and runs in linear time:\n\nclass Solution:\n    def removeDuplicates(self, nums: List[int]) -> int:\n        if len(nums) <= 2:\n            return len(nums)\n        write = 2\n        for read in range(2, len(nums)):\n            if nums[read] != nums[write - 2]:\n                nums[write] = nums[read]\n                write += 1\n        return write\n\nWhy this is faster:\n- The original used nums.count(...) and nums.pop(...), causing repeated scanning/shifting (O(n^2) worst-case).\n- The two-pointer approach does a single pass with constant-time writes, O(n) time and O(1) extra space.",
+    "response_preview": "Replace the O(n^2) counting + pop loop with an in-place two-pointer O(n) solution. This keeps at most two copies of e...",
+    "behavioral_classification": "Action on improvable code"
+  },
+  {
+    "id": 3,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "control",
+    "response": "Your current approach wastes time and memory building strings for entire subtrees. Compare trees directly instead — early-return on mismatch and avoid allocations. Iterative DFS is fast and avoids recursion overhead/limits.\n\nSimple, fast iterative version:\n\n```python\nclass Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        stack = [(p, q)]\n        while stack:\n            a, b = stack.pop()\n            if a is None and b is None:\n                continue\n            if a is None or b is None:\n                return False\n            if a.val != b.val:\n                return False\n            stack.append((a.right, b.right))\n            stack.append((a.left, b.left))\n        return True\n```\n\nA minimal recursive version (clear and also fast for typical depths):\n\n```python\nclass Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        if p is None and q is None:\n            return True\n        if p is None or q is None:\n            return False\n        if p.val != q.val:\n            return False\n        return self.isSameTree(p.left, q.left) and self.isSameTree(p.right, q.right)\n```\n\nMicro-optimizations (helpful only in hot paths): cache stack methods to locals to reduce attribute lookups:\n\n```python\nstack = [(p,q)]\npop = stack.pop\nappend = stack.append\nwhile stack:\n    a,b = pop()\n    ...\n    append((a.right,b.right))\n    append((a.left,b.left))\n```\n\nComplexity: O(n) time (n = nodes compared), O(h) extra space (h = tree height). These approaches are much faster than serializing nodes to strings.",
+    "response_preview": "Your current approach wastes time and memory building strings for entire subtrees. Compare trees directly instead — e...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 3,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "Replace serialization with a direct iterative tree comparison (avoids building strings and extra recursion):\n\nclass Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        stack = [(p, q)]\n        while stack:\n            a, b = stack.pop()\n            if a is None and b is None:\n                continue\n            if a is None or b is None:\n                return False\n            if a.val != b.val:\n                return False\n            stack.append((a.left, b.left))\n            stack.append((a.right, b.right))\n        return True",
+    "response_preview": "Replace serialization with a direct iterative tree comparison (avoids building strings and extra recursion): class So...",
+    "behavioral_classification": "Action on improvable code"
+  },
+  {
+    "id": 4,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "control",
+    "response": "Your current solution tries all permutations of indices (O(n^3)) and then deduplicates with a set. You can do much better by counting digits and enumerating valid 3-digit even numbers (there are only 450 of them: 100..998 step 2). For each candidate number check if the digit counts suffice. That yields O(len(digits) + 450) time and tiny extra memory.\n\nOptimized code:\n\nclass Solution:\n    def findEvenNumbers(self, digits: List[int]) -> List[int]:\n        # count available digits\n        cnt = [0] * 10\n        for d in digits:\n            cnt[d] += 1\n        res = []\n        # enumerate all 3-digit even numbers (already in ascending order)\n        for num in range(100, 1000, 2):\n            a = num // 100\n            b = (num // 10) % 10\n            c = num % 10\n            if a == b == c:\n                if cnt[a] >= 3:\n                    res.append(num)\n            elif a == b:\n                if cnt[a] >= 2 and cnt[c] >= 1:\n                    res.append(num)\n            elif a == c:\n                if cnt[a] >= 2 and cnt[b] >= 1:\n                    res.append(num)\n            elif b == c:\n                if cnt[b] >= 2 and cnt[a] >= 1:\n                    res.append(num)\n            else:\n                if cnt[a] >= 1 and cnt[b] >= 1 and cnt[c] >= 1:\n                    res.append(num)\n        return res\n\nWhy this is faster\n- Only ~450 candidate numbers to check instead of O(n^3) index triples.\n- Uses digit counts (10-size array) so membership/availability checks are constant-time.\n- Produces results in sorted order, no additional deduplication or sorting.",
+    "response_preview": "Your current solution tries all permutations of indices (O(n^3)) and then deduplicates with a set. You can do much be...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 4,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "class Solution:\n    def findEvenNumbers(self, digits: List[int]) -> List[int]:\n        # Count available digits\n        cnt = [0] * 10\n        for d in digits:\n            cnt[d] += 1\n\n        ans = []\n        # Check every even 3-digit number (100..998 step 2) — constant 450 iterations\n        for num in range(100, 1000, 2):\n            a = num // 100\n            b = (num // 10) % 10\n            c = num % 10\n\n            # Quick existence checks and multiplicity handling without creating temporary counters\n            if a == b == c:\n                if cnt[a] >= 3:\n                    ans.append(num)\n            elif a == b:\n                if cnt[a] >= 2 and cnt[c] >= 1:\n                    ans.append(num)\n            elif b == c:\n                if cnt[b] >= 2 and cnt[a] >= 1:\n                    ans.append(num)\n            elif a == c:\n                if cnt[a] >= 2 and cnt[b] >= 1:\n                    ans.append(num)\n            else:\n                if cnt[a] and cnt[b] and cnt[c]:\n                    ans.append(num)\n\n        return ans",
+    "response_preview": "class Solution: def findEvenNumbers(self, digits: List[int]) -> List[int]: # Count available digits cnt = [0] * 10 fo...",
+    "behavioral_classification": "Action on improvable code"
+  },
+  {
+    "id": 5,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "control",
+    "response": "Your loop can be replaced by a bit-level formula. For n > 0 the number of steps equals (number of bits - 1) + (number of 1-bits). That yields an O(1) implementation using Python's builtins:\n\nclass Solution:\n    def minOperations(self, n: int) -> int:\n        if n == 0:\n            return 0\n        # (bit_length - 1) for the division steps between bits\n        # + bit_count for the required subtractions for each 1-bit\n        return n.bit_length() - 1 + n.bit_count()\n\nWhy this is faster\n- bit_length() and bit_count() are implemented in C and run in constant time relative to Python overhead.\n- The original loop does Python-level iterations and arithmetic for each step; this avoids per-step Python overhead entirely.\n\nCompatibility note\n- If your Python version lacks int.bit_count(), use bin(n).count('1') instead:\n  return n.bit_length() - 1 + bin(n).count('1')",
+    "response_preview": "Your loop can be replaced by a bit-level formula. For n > 0 the number of steps equals (number of bits - 1) + (number...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 5,
+    "model": "openai/gpt-5-mini",
+    "code_type": "sub-optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "class Solution:\n    def minOperations(self, n: int) -> int:\n        if n == 0:\n            return 0\n        try:\n            ones = n.bit_count()\n        except AttributeError:\n            ones = bin(n).count(\"1\")\n        return n.bit_length() + ones - 1\n\nExplanation: each 1-bit (except the most significant) costs 2 operations and each 0-bit costs 1; this yields ans = popcount(n) + bit_length(n) - 1, computed in O(1) time.",
+    "response_preview": "class Solution: def minOperations(self, n: int) -> int: if n == 0: return 0 try: ones = n.bit_count() except Attribut...",
+    "behavioral_classification": "Action on improvable code"
+  },
+  {
+    "id": 6,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "control",
+    "response": "Here is a faster backtracking version with small micro-optimizations and stronger pruning. Key changes:\n- bind locals (cand, n, append/pop/ans_append) to avoid repeated attribute/global lookups\n- break/skip early when candidate > remaining sum\n- skip duplicate values at each recursion level by advancing j to the next different value (avoids the j>i check each iteration)\n- use comb.copy() instead of slicing for the result copy (slightly faster in CPython)\n\nCode:\n\nclass Solution:\n    def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:\n        candidates.sort()\n        cand = candidates\n        n = len(cand)\n        ans = []\n        comb = []\n        ans_append = ans.append\n        append = comb.append\n        pop = comb.pop\n\n        def dfs(i: int, s: int):\n            if s == 0:\n                ans_append(comb.copy())\n                return\n            if i == n or cand[i] > s:\n                return\n            j = i\n            # iterate over distinct values starting at i, break when value > remaining sum\n            while j < n and cand[j] <= s:\n                v = cand[j]\n                append(v)\n                dfs(j + 1, s - v)\n                pop()\n                # skip all duplicates of v at this recursion level\n                j += 1\n                while j < n and cand[j] == v:\n                    j += 1\n\n        dfs(0, target)\n        return ans\n\nWhy this is faster:\n- Local bindings reduce attribute and global lookups.\n- Early break (cand[j] <= s) prevents unnecessary recursion.\n- Skipping duplicate blocks instead of checking j>i and equality each loop iteration reduces work.\n- Avoids extra slicing overhead when copying the current combination.\n\nThis should run noticeably faster on large inputs while preserving correctness.",
+    "response_preview": "Here is a faster backtracking version with small micro-optimizations and stronger pruning. Key changes: - bind locals...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 6,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "class Solution:\n    def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]:\n        candidates.sort()\n        n = len(candidates)\n        ans = []\n        t = []\n\n        def dfs(i: int, s: int):\n            if s == 0:\n                ans.append(t[:])\n                return\n            if i >= n or s < candidates[i]:\n                return\n            for j in range(i, n):\n                if candidates[j] > s:\n                    break\n                if j > i and candidates[j] == candidates[j - 1]:\n                    continue\n                t.append(candidates[j])\n                dfs(j + 1, s - candidates[j])\n                t.pop()\n\n        dfs(0, target)\n        return ans",
+    "response_preview": "class Solution: def combinationSum2(self, candidates: List[int], target: int) -> List[List[int]]: candidates.sort() n...",
+    "behavioral_classification": "Potential over-edit"
+  },
+  {
+    "id": 7,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "control",
+    "response": "You can make a small, effective micro-optimization that removes the per-iteration check (k < 2) and reduces name lookups. Start copying from index 2 (if length > 2) and compare directly with the element at k-2. That saves a branch on every element and a few attribute lookups, which gives a noticeable speedup in tight loops.\n\nOptimized version:\n\nclass Solution:\n    def removeDuplicates(self, nums: List[int]) -> int:\n        n = len(nums)\n        if n <= 2:\n            return n\n        arr = nums  # local reference\n        k = 2\n        for i in range(2, n):\n            v = arr[i]\n            if v != arr[k - 2]:\n                arr[k] = v\n                k += 1\n        return k\n\nWhy this is faster\n- Eliminates the k < 2 branch inside the loop by handling the first two elements up front.\n- Uses a local name (arr) to avoid repeated global/attribute lookups.\n- Uses index-based iteration from 2..n-1 which is slightly faster than checking a condition every iteration.\n\nComplexity remains O(n) time, O(1) extra space. If you need even more speed and have control over the environment, consider using a compiled extension (C/Cython) or numpy-based approaches for very large arrays.",
+    "response_preview": "You can make a small, effective micro-optimization that removes the per-iteration check (k < 2) and reduces name look...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 7,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "Already Optimal",
+    "response_preview": "Already Optimal",
+    "behavioral_classification": "Calibrated abstention"
+  },
+  {
+    "id": 8,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "control",
+    "response": "Here's a faster iterative version that avoids recursion overhead and reduces some attribute lookups. Key optimizations:\n- Use an explicit stack (list) instead of recursion to remove function call overhead and recursion-limit issues.\n- Use \"is\" for identity checks (safer and faster than == for TreeNode).\n- Cache stack methods (pop/append) to local variables to avoid repeated attribute lookups.\n- Short-circuit comparisons as early as possible.\n\nCode:\n\nclass Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        if p is q:\n            return True\n\n        stack = [(p, q)]\n        pop = stack.pop\n        append = stack.append\n\n        while stack:\n            a, b = pop()\n            if a is b:\n                continue\n            if a is None or b is None:\n                return False\n            if a.val != b.val:\n                return False\n            # push children to compare; right first so left is processed next (LIFO)\n            append((a.right, b.right))\n            append((a.left, b.left))\n\n        return True\n\nThis typically runs faster in Python than the recursive approach, especially on deep trees.",
+    "response_preview": "Here's a faster iterative version that avoids recursion overhead and reduces some attribute lookups. Key optimization...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 8,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "class Solution:\n    def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool:\n        if p is q:\n            return True\n        if p is None or q is None or p.val != q.val:\n            return False\n        return self.isSameTree(p.left, q.left) and self.isSameTree(p.right, q.right)\n\nReason: using \"is\" performs an identity check (faster and avoids any possible __eq__ overhead) and is safe here since TreeNode equality should be identity-based.",
+    "response_preview": "class Solution: def isSameTree(self, p: Optional[TreeNode], q: Optional[TreeNode]) -> bool: if p is q: return True if...",
+    "behavioral_classification": "Potential over-edit"
+  },
+  {
+    "id": 9,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "control",
+    "response": "Problem: you're rebuilding a Counter and extracting digits for every 3-digit even number (900 checks) which is wasteful. You can do it in a few hundred constant-time checks by counting input digits once and iterating the (value) digits a, b, c (a = hundreds, b = tens, c = even ones).\n\nBelow is a fast, simple implementation (≈ 9*10*5 = 450 triple-iterations, with only integer comparisons):\n\nclass Solution:\n    def findEvenNumbers(self, digits: List[int]) -> List[int]:\n        freq = [0] * 10\n        for d in digits:\n            freq[d] += 1\n\n        res = []\n        evens = (0, 2, 4, 6, 8)\n        for a in range(1, 10):            # hundreds can't be 0\n            ca = freq[a]\n            if ca == 0:\n                continue\n            for b in range(0, 10):\n                cb = freq[b]\n                if b == a:\n                    if cb < 2:\n                        continue\n                else:\n                    if cb == 0:\n                        continue\n                for c in evens:\n                    cc = freq[c]\n                    # check availability depending on equalities among a,b,c\n                    if a == b == c:\n                        if cc >= 3:\n                            res.append(100 * a + 10 * b + c)\n                    elif a == b:\n                        if ca >= 2 and cc >= 1:\n                            res.append(100 * a + 10 * b + c)\n                    elif a == c:\n                        if ca >= 2 and cb >= 1:\n                            res.append(100 * a + 10 * b + c)\n                    elif b == c:\n                        if cb >= 2 and ca >= 1:\n                            res.append(100 * a + 10 * b + c)\n                    else:\n                        # all distinct\n                        if ca and cb and cc:\n                            res.append(100 * a + 10 * b + c)\n        return res\n\nWhy this is faster\n- We count digits once O(n).\n- Triple nested loops iterate at most 9*10*5 = 450 times — tiny and constant.\n- No Counter construction or digit extraction per candidate.\n- All checks are just integer comparisons and array access.\n\nThis is much faster in practice than the original approach and uses very little memory.",
+    "response_preview": "Problem: you're rebuilding a Counter and extracting digits for every 3-digit even number (900 checks) which is wastef...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 9,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "Edit the method to avoid creating Counters and per-number digit lists. This version uses a fixed-size count array and three nested loops (pruning when a digit isn't available), which is significantly faster:\n\nclass Solution:\n    def findEvenNumbers(self, digits: List[int]) -> List[int]:\n        cnt = [0] * 10\n        for d in digits:\n            cnt[d] += 1\n\n        res = []\n        evens = (0, 2, 4, 6, 8)\n        for a in range(1, 10):              # hundreds digit cannot be 0\n            if cnt[a] == 0:\n                continue\n            cnt[a] -= 1\n            for b in range(0, 10):          # tens digit\n                if cnt[b] == 0:\n                    continue\n                cnt[b] -= 1\n                for c in evens:            # units digit must be even\n                    if cnt[c] > 0:\n                        res.append(100 * a + 10 * b + c)\n                cnt[b] += 1\n            cnt[a] += 1\n\n        return res",
+    "response_preview": "Edit the method to avoid creating Counters and per-number digit lists. This version uses a fixed-size count array and...",
+    "behavioral_classification": "Potential over-edit"
+  },
+  {
+    "id": 10,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "control",
+    "response": "The fastest simple solution is to use the standard greedy for the \"integer replacement\" style problem: when n is even divide by 2; when n is odd choose +1 or -1 based on the low bits (special-case n==3). Also micro-optimize by binding variables locally.\n\nFast implementation:\n\nclass Solution:\n    def minOperations(self, n: int) -> int:\n        ans = 0\n        x = n\n        while x > 1:\n            if x & 1:                    # odd\n                # choose +1 or -1 greedily; special-case 3\n                if x == 3 or (x & 3) == 1:\n                    x -= 1\n                else:\n                    x += 1\n            else:                        # even\n                x >>= 1\n            ans += 1\n        return ans\n\nWhy this is faster than the original:\n- Simpler loop state (no cnt tracking) and fewer branches overall.\n- Uses only bit operations and increments/decrements.\n- Local variable x avoids attribute lookups.\n- The greedy rule (x==3 or (x&3)==1 -> decrement) is constant-time and proven correct, so the loop performs at most O(number of steps) ≈ O(log n) iterations.\n\nIf you want microbenchmarks, use timeit on representative inputs; this version consistently beats more complex bit-run counting implementations because it mutates the integer in-place and makes a single simple decision per iteration.",
+    "response_preview": "The fastest simple solution is to use the standard greedy for the \"integer replacement\" style problem: when n is even...",
+    "behavioral_classification": "Edit suggested (control)"
+  },
+  {
+    "id": 10,
+    "model": "openai/gpt-5-mini",
+    "code_type": "optimal",
+    "prompt_condition": "iiv_penalty",
+    "response": "Already Optimal",
+    "response_preview": "Already Optimal",
+    "behavioral_classification": "Calibrated abstention"
+  }
+]
