@@ -1,0 +1,5 @@
+prompt_condition,code_type,n,n,edit_count,edit_rate,abstention_count,abstention_rate,over-edit_count,over-edit_rate,false abstention_count,false abstention_rate,unknown_count,unknown_rate
+control,optimal,40,40,40,1.0,0,0.0,0,0.0,0,0.0,0,0.0
+control,sub-optimal,40,40,40,1.0,0,0.0,0,0.0,0,0.0,0,0.0
+iiv_penalty,optimal,40,40,0,0.0,16,0.4,24,0.6,0,0.0,0,0.0
+iiv_penalty,sub-optimal,40,40,40,1.0,0,0.0,0,0.0,0,0.0,0,0.0
