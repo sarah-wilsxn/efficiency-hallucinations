@@ -79,6 +79,7 @@ MODEL_ALIASES = {
     "gemini-3.1-pro-preview": "google/gemini-3.1-pro-preview",
     "gpt-5.4-mini": "openai/gpt-5.4-mini",
     "gpt-5-mini": "openai/gpt-5-mini",
+    "gpt-5.4": "openai/gpt-5.4",
     "qwen-3.5-122b-a10b": "qwen/qwen3.5-122b-a10b",
 }
 
@@ -225,25 +226,6 @@ def extract_response_text(payload: Dict[str, Any]) -> str:
     return f"[Unrecognized response schema] {str(payload)[:500]}"
 
 
-def classify_behavior(code_type: str, condition: str, response_text: str) -> str:
-    trimmed = response_text.strip()
-    already_optimal = trimmed == "Already Optimal"
-
-    if condition == "iiv_penalty" and already_optimal and code_type == "optimal":
-        return "Calibrated abstention"
-    if condition == "iiv_penalty" and already_optimal and code_type == "sub-optimal":
-        return "Potential false abstention"
-    if condition == "iiv_penalty" and not already_optimal and code_type == "optimal":
-        return "Potential over-edit"
-    if condition == "iiv_penalty" and not already_optimal and code_type == "sub-optimal":
-        return "Action on improvable code"
-    if condition == "control" and already_optimal:
-        return "Unexpected abstention (control)"
-    if condition == "control" and not already_optimal:
-        return "Edit suggested (control)"
-    return "Unclassified"
-
-
 def latex_escape(text: str) -> str:
     """Escape LaTeX special characters."""
     replacements = {
@@ -316,8 +298,6 @@ async def call_model(
     except Exception as exc:
         response_text = f"[Unexpected semaphore error] {type(exc).__name__}: {exc}"
 
-    behavior = classify_behavior(snippet["type"], condition_name, response_text)
-
     return {
         "id": snippet["id"],
         "model": model_name,
@@ -325,7 +305,6 @@ async def call_model(
         "prompt_condition": condition_name,
         "response": response_text,
         "response_preview": preview_text(response_text),
-        "behavioral_classification": behavior,
     }
 
 
@@ -375,9 +354,6 @@ async def run_model_batch(
                         "prompt_condition": condition_name,
                         "response": timeout_text,
                         "response_preview": preview_text(timeout_text),
-                        "behavioral_classification": classify_behavior(
-                            snippet["type"], condition_name, timeout_text
-                        ),
                     }
                 )
         return results
@@ -391,7 +367,7 @@ def print_terminal_results(results: List[Dict[str, Any]]) -> None:
         print(f"Model: {row['model']}")
         print(f"Code Type: {row['code_type']}")
         print(f"Prompt Condition: {row['prompt_condition']}")
-        print(f"Behavioral Classification: {row['behavioral_classification']}")
+        print(f"Behavioral Classification: {row.get('behavioral_classification', 'n/a (run reclassify.py)')}")
         print(f"Response Preview: {row['response_preview']}")
 
 
@@ -409,7 +385,7 @@ def print_latex_tabular(results: List[Dict[str, Any]]) -> None:
             f" & {latex_escape(row['code_type'])}"
             f" & {latex_escape(row['prompt_condition'])}"
             f" & {latex_escape(row['response_preview'])}"
-            f" & {latex_escape(row['behavioral_classification'])} \\\\")
+            f" & {latex_escape(row.get('behavioral_classification', ''))} \\\\")
         print(line)
 
     print("\\hline")

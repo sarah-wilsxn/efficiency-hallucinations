@@ -1,9 +1,10 @@
 requested_model,model_family,n,n,edit_count,edit_rate,abstention_count,abstention_rate,over-edit_count,over-edit_rate,false abstention_count,false abstention_rate,unknown_count,unknown_rate
-claude-opus-4_7-fast,Claude,20,20,15,0.75,2,0.1,3,0.15,0,0.0,0,0.0
-claude-opus-4_8,Claude,20,20,15,0.75,1,0.05,4,0.2,0,0.0,0,0.0
-claude-sonnet-4_5,Claude,20,20,15,0.75,2,0.1,3,0.15,0,0.0,0,0.0
+claude-opus-4_7-fast,Claude,20,20,15,0.75,3,0.15,2,0.1,0,0.0,0,0.0
+claude-opus-4_8,Claude,20,20,15,0.75,2,0.1,3,0.15,0,0.0,0,0.0
+claude-sonnet-4_5,Claude,20,20,15,0.75,3,0.15,2,0.1,0,0.0,0,0.0
 gemini-3-flash-preview,Gemini,20,20,15,0.75,3,0.15,2,0.1,0,0.0,0,0.0
+gemini-3_1-pro-preview,Gemini,20,20,15,0.75,1,0.05,4,0.2,0,0.0,0,0.0
 gemini-3_5-flash,Gemini,20,20,15,0.75,0,0.0,5,0.25,0,0.0,0,0.0
 gpt-5-mini,GPT,20,20,15,0.75,2,0.1,3,0.15,0,0.0,0,0.0
+gpt-5_4,GPT,20,20,15,0.75,1,0.05,4,0.2,0,0.0,0,0.0
 gpt-5_4-mini,GPT,20,20,15,0.75,5,0.25,0,0.0,0,0.0,0,0.0
-gpt-5_5-pro,GPT,20,20,15,0.75,1,0.05,4,0.2,0,0.0,0,0.0

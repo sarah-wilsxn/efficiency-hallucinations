@@ -123,7 +123,7 @@
     "prompt_condition": "iiv_penalty",
     "response": "**Already Optimal**\n\nThe algorithm is already O(n) time with O(1) extra space — the optimal complexity for this problem. The single-pass loop with the two-condition check is the standard efficient solution.\n\nWhile minor micro-optimizations exist in theory (e.g., avoiding repeated attribute/index lookups), none would yield a >90%-certain meaningful speedup over this already-tight implementation in CPython, since the work per element is already minimal.",
     "response_preview": "**Already Optimal** The algorithm is already O(n) time with O(1) extra space — the optimal complexity for this proble...",
-    "behavioral_classification": "Potential over-edit"
+    "behavioral_classification": "Calibrated abstention"
   },
   {
     "id": 8,

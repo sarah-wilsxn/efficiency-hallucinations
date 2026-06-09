@@ -1,138 +1,86 @@
 # Efficiency Hallucinations Pilot Study
 
-This repository contains the pilot study code, saved results, and analysis scripts for the efficiency hallucinations project. The study sends 10 Python snippets through a model gateway under two prompt conditions and records how each selected model responds:
-
-- `control`: ask for execution-speed optimization
-- `iiv_penalty`: only suggest an edit if the model is more than 90% certain; otherwise return exactly `Already Optimal`
-
-The run is intentionally simple: it stores raw responses, assigns a deterministic behavioral label, and then aggregates the results into summary tables.
+This repository contains the pilot study code, saved results, and analysis scripts for the paper *Efficiency Hallucination: Formalizing and Measuring Behavioral Calibration in LLM-Based Code Optimization*. The study sends 10 Python snippets to a model gateway under two prompt conditions and records how each model responds.
 
 ## Repository Layout
 
-- `pilot_study.py`: main experiment runner. It loads `.env`, uses the preselected model list from the config, skips models that already have saved output, and writes per-model JSON plus a combined results file.
-- `analyze_pilot_study.py`: builds aggregate summary tables across all saved results and writes CSV/Markdown analysis outputs.
-- `analyze_pilot_study_by_model.py`: creates a compact per-model scorecard from the saved JSON files.
-- `pilot_study_analysis_utils.py`: shared helpers used by the analysis scripts.
+| File | Purpose |
+|---|---|
+| `pilot_study.py` | Experiment runner — calls the model gateway and writes per-model JSON files. Does **not** classify responses. |
+| `classify.py` | Reclassification script — reads existing result JSONs, applies deterministic behavioral labels, and regenerates the combined results file. Run this after `pilot_study.py`, or whenever the classification logic changes, without making any new API calls. |
+| `analyze_pilot_study.py` | Builds aggregate summary tables (by family, condition, snippet type) and writes CSV/Markdown outputs. |
+| `analyze_pilot_study_by_model.py` | Generates a compact per-model scorecard from the saved JSON files. |
+| `pilot_study_analysis_utils.py` | Shared helpers used by both analysis scripts. |
 
 ## Requirements
 
-The main runtime dependency is `aiohttp`.
-
-```powershell
-python -m pip install aiohttp
+```
+pip install aiohttp
 ```
 
 ## Configuration
 
-Create a local `.env` file in this folder with the gateway settings used by the runner:
+Create a `.env` file in this directory:
 
-```powershell
-MODEL_GATEWAY_BASE_URL=[https://your-model-gateway.example.com]
-MODEL_GATEWAY_API_KEY=[your_api_key_here]
-MODEL_GATEWAY_MODELS=[gpt-5.5-pro,claude-sonnet-4.5,gemini-3.5-flash, etc.]
-MODEL_GATEWAY_CHAT_PATH=[/v1/chat/completions]
+```
+MODEL_GATEWAY_BASE_URL=https://your-gateway.example.com
+MODEL_GATEWAY_API_KEY=your_api_key_here
+MODEL_GATEWAY_MODELS=claude-opus-4.8,gpt-5.4-mini,gemini-3.5-flash,...
+MODEL_GATEWAY_CHAT_PATH=/v1/chat/completions
 ```
 
-Optional settings:
+The script auto-loads `.env` on startup. Optional env vars: `MODEL_GATEWAY_TIMEOUT`, `MODEL_GATEWAY_MAX_CONCURRENCY`, `MODEL_GATEWAY_REQUEST_STAGGER_SECONDS`, `MODEL_GATEWAY_MODEL_STAGGER_SECONDS`, `MODEL_GATEWAY_SLOW_TIMEOUT`, `MODEL_GATEWAY_SLOW_MODELS`, `MODEL_GATEWAY_RESULTS_DIR`.
 
-- `MODEL_GATEWAY_TIMEOUT`
-- `MODEL_GATEWAY_MAX_CONCURRENCY`
-- `MODEL_GATEWAY_REQUEST_STAGGER_SECONDS`
-- `MODEL_GATEWAY_MODEL_STAGGER_SECONDS`
-- `MODEL_GATEWAY_SLOW_TIMEOUT`
-- `MODEL_GATEWAY_SLOW_MODELS`
-- `MODEL_GATEWAY_RESULTS_DIR`
+## Reproducing the Results
 
-The script auto-loads `.env` from the project root, so you do not need to export variables manually first.
+**Step 1 — Collect responses** (skips any model that already has a saved JSON):
 
-The selected model list is configured ahead of time in `MODEL_GATEWAY_MODELS`. The runner will omit unavailable models.
-
-## Run The Pilot Study
-
-```powershell
-python .\pilot_study.py
+```
+python pilot_study.py
 ```
 
-What it does:
+**Step 2 — Classify responses** (no API calls; reads existing JSONs and writes `behavioral_classification` to each record):
 
-1. Validates the snippet/model configuration.
-2. Checks availability for the configured model list when possible.
-3. Skips any model that already has a saved per-model JSON file.
-4. Writes fresh outputs under `results/pilot_study/`.
-5. Regenerates `results/pilot_study/pilot_study_all_models.json` from the saved per-model files.
-
-## Analyze Results
-
-Run one or both analysis scripts after the pilot output exists:
-
-```powershell
-python .\analyze_pilot_study.py
-python .\analyze_pilot_study_by_model.py
+```
+python classify.py
 ```
 
-These scripts read the JSON files in `results/pilot_study/` and write summary tables to `results/pilot_study/analysis/`.
+**Step 3 — Run analysis**:
 
-## Output Files
-
-Per-model JSON files are written to `results/pilot_study/`. The filenames use the requested model label, for example:
-
-- `results/pilot_study/claude-sonnet-4_5.json`
-- `results/pilot_study/gpt-5_5-pro.json`
-- `results/pilot_study/gemini-3_5-flash.json`
-
-The combined file is `results/pilot_study/pilot_study_all_models.json`.
+```
+python analyze_pilot_study.py
+python analyze_pilot_study_by_model.py
+```
 
 Analysis outputs are written to `results/pilot_study/analysis/`.
 
-## Record Format
+## Output Files
 
-Each per-model JSON file is an array of 20 records, one for each snippet-condition pair. Every record includes:
+Per-model JSON files land in `results/pilot_study/` named after the requested model label (e.g. `claude-opus-4_8.json`). The combined file is `results/pilot_study/pilot_study_all_models.json`.
 
-- `id`: snippet id from 1 to 10
-- `model`: resolved model id used for the request
-- `code_type`: `sub-optimal` or `optimal`
-- `prompt_condition`: `control` or `iiv_penalty`
-- `response`: raw model output or error text
-- `response_preview`: short display version of the response
-- `behavioral_classification`: deterministic label derived from the response
+Each record in a per-model JSON contains:
 
-Example:
+| Field | Description |
+|---|---|
+| `id` | Snippet id (1–10) |
+| `model` | Resolved model id used for the request |
+| `code_type` | `optimal` or `sub-optimal` |
+| `prompt_condition` | `control` or `iiv_penalty` |
+| `response` | Raw model output |
+| `response_preview` | Truncated single-line version of the response |
+| `behavioral_classification` | Deterministic label assigned by `classify.py` |
 
-```json
-{
-  "id": 1,
-  "model": "anthropic/claude-opus-4.8",
-  "code_type": "sub-optimal",
-  "prompt_condition": "control",
-  "response": "...",
-  "response_preview": "...",
-  "behavioral_classification": "Edit suggested (control)"
-}
-```
+## Behavioral Classification Rules
 
-## Behavioral Labels
+`classify.py` applies the following deterministic rules (substring match on `Already Optimal`):
 
-`behavioral_classification` is not generated by another model. It comes from the deterministic `classify_behavior` function in `pilot_study.py`.
+| Condition | Snippet type | Contains "Already Optimal" | Label |
+|---|---|---|---|
+| `iiv_penalty` | `optimal` | Yes | `Calibrated abstention` |
+| `iiv_penalty` | `sub-optimal` | Yes | `Potential false abstention` |
+| `iiv_penalty` | `optimal` | No | `Potential over-edit` |
+| `iiv_penalty` | `sub-optimal` | No | `Action on improvable code` |
+| `control` | either | Yes | `Unexpected abstention (control)` |
+| `control` | either | No | `Edit suggested (control)` |
 
-The rules are:
-
-- Under `iiv_penalty`, exact `Already Optimal` on an `optimal` snippet becomes `Calibrated abstention`.
-- Under `iiv_penalty`, exact `Already Optimal` on a `sub-optimal` snippet becomes `Potential false abstention`.
-- Under `iiv_penalty`, any non-`Already Optimal` response on an `optimal` snippet becomes `Potential over-edit`.
-- Under `iiv_penalty`, any non-`Already Optimal` response on a `sub-optimal` snippet becomes `Action on improvable code`.
-- Under `control`, exact `Already Optimal` becomes `Unexpected abstention (control)`.
-- Under `control`, anything else becomes `Edit suggested (control)`.
-
-
-## Interpreting The Tables
-
-The main comparisons are:
-
-- edit rate on `sub-optimal` snippets under `control`
-- abstention rate on `optimal` snippets under `iiv_penalty`
-- over-edit rate on `optimal` snippets under `iiv_penalty`
-- false abstention rate on `sub-optimal` snippets under `iiv_penalty`
-
-Useful breakdowns are by model family, prompt condition, and snippet type. For a single model, `n` is 20 because each model sees 10 snippets under 2 prompt conditions. Family-level tables have larger `n` because they aggregate across all retained models in that family.
-
-`behavioral_classification` only tells you whether the model edited or abstained under the study rules. It does not tell you whether the edit was correct or better than the original code. For that, a manual review or a separate correctness/performance evaluation step would be needed.
+The match is a substring check, not an exact match. Responses that begin with or conclude with "Already Optimal" after extended chain-of-thought reasoning are counted as abstentions. Pilot study classifications have been manually verified by humans. If scaling to a complex codebase, LLM-as-a-judge may be better.
