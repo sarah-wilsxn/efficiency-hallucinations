@@ -11,6 +11,8 @@ This repository contains the pilot study code, saved results, and analysis scrip
 | `analyze_pilot_study.py` | Builds aggregate summary tables (by family, condition, snippet type) and writes CSV/Markdown outputs. |
 | `analyze_pilot_study_by_model.py` | Generates a compact per-model scorecard from the saved JSON files. |
 | `pilot_study_analysis_utils.py` | Shared helpers used by both analysis scripts. |
+| `generate_figure.py` | Generates `calibration_figure.pdf` — the per-model abstention rate bar chart included in the paper. |
+| `Pilot_Study_Empirical_Validation.pdf` | Case-by-case analysis validating that each Gemini-3.5-Flash-generated sub-optimal snippet is genuinely sub-optimal and suitable as study data. Provides empirical grounding for the optimal/sub-optimal snippet pairs used in the experiment. |
 
 ## Requirements
 
